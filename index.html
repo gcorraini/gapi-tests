@@ -3,24 +3,112 @@
 
 <head>
     <title>Google Calendar API Quickstart</title>
+
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="./index.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
 <body>
-    <p>Google Calendar API Quickstart</p>
 
-    <!--Add buttons to initiate auth sequence and sign out-->
-    <button id="authorize_button" style="display: none;">Authorize</button>
-    <button id="signout_button" style="display: none;">Sign Out</button>
+    <nav class="navatar blue-grey">
+        <div class="nav-wrapper container">
+            <a href="#" class="brand-logo left" style="position: static;">GAPI tests</a>
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+                <!-- <li><a href="#">Sass</a></li>
+                <li><a href="#">Components</a></li>
+                <li><a href="#">JavaScript</a></li> -->
+            </ul>
+            <ul class="right" style="height:inherit;">
+                <li id="userName">AAA</li>
+                <!-- <li><a href="#!"><span>1</span><i class="material-icons right">email</i></a></li> -->
+                <li style="height:inherit;"><a style="height:inherit;" href="#user"><img id="navProfilePic"
+                            style="height:100%; padding:8px" class="circle" src="https://picsum.photos/100"></a></li>
+            </ul>
+        </div>
+    </nav>
 
-    <div>
-        <label for="maxRes">Max Results:</label>
-        <input type="number" id="maxRes" name="maxRes" max="250" min="1" value="250"><br><br>
-        <button id="callList" onclick="calListMaxResults()">Call List</button><br><br>
-        <button id="nextPage" onclick="calListNextPage()">Next page</button><br><br>
+    <div class="container">
+        <div class="row">
+            <div class="col s6">
+                <p>Google Calendar API Quickstart</p>
+            </div>
+            <div class="col s6">
+                <!--Add buttons to initiate auth sequence and sign out-->
+                <button class="waves-effect waves-light btn-large" id="authorize_button" style="display: none;">Authorize</button>
+                <button class="waves-effect waves-light btn-large" id="signout_button" style="display: none;">Sign Out</button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col s12">
+                <div class="input-field inline">
+                    <input type="number" id="maxRes" name="maxRes" max="250" min="1" value="250">
+                    <label for="maxRes">Max Results:</label>
+                    <span class="helper-text" data-error="wrong" data-success="right">Min: 1 / Max: 250</span>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col s6">
+                <button id="callList" onclick="calListMaxResults()" class="waves-effect waves-light btn-large">Call List</button>
+            </div>
+            <div class="col s6">
+                <button id="nextPage" onclick="calListNextPage()" class="waves-effect waves-light btn-large">Next page</button>
+            </div>
+        </div>
+
+        <pre id="content" style="white-space: pre-wrap;"></pre>
+
+        <div class="row">
+            <table id="tableDisplay" class="highlight responsive-table">
+                <thead>
+                    <tr>
+                        <th>accessRole</th>
+                        <th>backgroundColor</th>
+                        <th>colorId</th>
+                        <th>conferenceProperties</th>
+                        <th>defaultReminders</th>
+                        <th>description</th>
+                        <th>etag</th>
+                        <th>foregroundColor</th>
+                        <th>id</th>
+                        <th>kind</th>
+                        <th>summary</th>
+                        <th>timeZone</th>
+                    </tr>
+                </thead>
+        
+                <tbody>
+                  <!-- <tr>
+                    <td>Alvin</td>
+                    <td>Eclair</td>
+                    <td>$0.87</td>
+                  </tr>
+                  <tr>
+                    <td>Alan</td>
+                    <td>Jellybean</td>
+                    <td>$3.76</td>
+                  </tr>
+                  <tr>
+                    <td>Jonathan</td>
+                    <td>Lollipop</td>
+                    <td>$7.00</td>
+                  </tr> -->
+                </tbody>
+              </table>
+        </div>
     </div>
 
-    <pre id="content" style="white-space: pre-wrap;"></pre>
+
+    <!-- SCRIPTS -->
 
     <script type="text/javascript" src="./local.js"></script>
 
@@ -84,9 +172,11 @@
                 signoutButton.style.display = 'block';
                 //If signed in, run API call
                 //listUpcomingEvents();
+                updateNavBar(true);
             } else {
                 authorizeButton.style.display = 'block';
                 signoutButton.style.display = 'none';
+                updateNavBar(false);
             }
         }
 
@@ -150,22 +240,18 @@
 
         function calListMaxResults() {
             var maxResults = parseInt(document.getElementById("maxRes").value, 10);
-            appendPre("MR: " + maxResults);
-            alert("NPT == " + _calendarList_list_nextPageToken);
+            //appendPre("MR: " + maxResults);
+            //alert("NPT == " + _calendarList_list_nextPageToken);
 
             //ENFORCING INPUT CHECK ON THE ""BACKEND""
             if ((typeof maxResults == 'number') && (maxResults > 0 && maxResults < 251)) { //as documented in https://developers.google.com/calendar/v3/reference/calendarList/list
                 //alert("maxResults is a 'number' and == " + maxResults);
                 //than, input safe call calendarList 
 
-
                 gapi.client.calendar.calendarList.list({
                     "maxResults": maxResults,
-                    // "pageToken": _calendarList_list_nextPageToken,
                     "fields": "*"
                 }).then(function (response) {
-                    //var lsCal = response;
-                    //console.log(response);
                     debugBuffer = response;
 
                     if (response.status != 200) {
@@ -181,11 +267,12 @@
 
                         //TODO: That was the plan however nextPageToken returns a different token each time, tokenList is storing wrong values
                         //if (!_calendarList_list_tokenList.includes(response.result.nextPageToken)) { //If Global tokenList doesnt contain current nextPageToken
-                            //push to it, highest index should contain latest page token "discovery"
-                            //_calendarList_list_tokenList.push(response.result.nextPageToken);
+                        //push to it, highest index should contain latest page token "discovery"
+                        //_calendarList_list_tokenList.push(response.result.nextPageToken);
                         //};
                     };
 
+                    initDisplayTable();
                     //TODO: loop through result and print on a table
                     /*
                     for (x in response.result.items) {
@@ -215,18 +302,20 @@
                 return;
             };
 
-            if (obj.hasOwnProperty(paramName)){ //if obj contains the property on paramName
+            if (obj.hasOwnProperty(paramName)) { //if obj contains the property on paramName
                 //Than return its value, otherwise return nothing (TODO: for now)
                 return obj[paramName];
             };
             return;
         };
 
-        function calListNextPage(){
-            if (_calendarList_list_nextPageToken.length == 0){ //if _calendarList_list_nextPageToken is empty, 
+        function calListNextPage() {
+            if (_calendarList_list_nextPageToken.length == 0) { //if _calendarList_list_nextPageToken is empty, 
                 //Than return nothing
                 return;
             };
+
+            var maxResults = parseInt(document.getElementById("maxRes").value, 10);
 
             //TODO: fetch next page
             gapi.client.calendar.calendarList.list({
@@ -235,17 +324,77 @@
                 "fields": "*"
             }).then(function (response) {
                 //TODO: display results
+                if (response.status != 200) {
+                    //OOPS, not cool. Alert the user! 
+                    alert("Something went wrong! response.status == " + response.status + " response.statusText == " + response.statusText);
+                    console.log(response);
+                    return; //GET OUTTA HERE, ITS GONNA BLOW.
+                };
+                if (response.result.hasOwnProperty("nextPageToken")) { //response contains nextPageToken?
+                    //if it does, store it on global _calendarList_list_nextPageToken
+                    _calendarList_list_nextPageToken = response.result.nextPageToken;
+                } else if (response.result.hasOwnProperty("nextSyncToken")) { //response contains nextSyncToken?
+                    //Than you have reached the last page, exit
+                    alert("last page");
+                    return;
+                };
+
                 console.log("next page");
                 debugBuffer = response;
+                console.log(response.result.items[0]);
+                appendPre(JSON.stringify(response.result.items));
             });
+        };
+
+        function initDisplayTable() {
+            //TODO: render table and headers to display section
+            return;
+        };
+        function populateDisplayTable(obj) {
+            //TODO: populate table
+            var table = document.getElementById('tableDisplay').getElementsByTagName('tbody')[0];
+            // Insert a row at the end of table
+            var newRow = table.insertRow();
+
+            // Insert a cell at the end of the row
+            var newCell = newRow.insertCell();
+
+            // Append a text node to the cell
+            var newText = document.createTextNode('new row');
+            newCell.appendChild(newText);
+
+            return;
+        };
+
+        function updateNavBar(signIn) {
+            if (signIn) {
+                //update navbar to show user info
+                if (gapi.auth2.getAuthInstance().isSignedIn.get()) {
+                    var profile = gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile();
+                    console.log('ID: ' + profile.getId());
+                    console.log('Full Name: ' + profile.getName());
+                    console.log('Given Name: ' + profile.getGivenName());
+                    console.log('Family Name: ' + profile.getFamilyName());
+                    console.log('Image URL: ' + profile.getImageUrl());
+                    console.log('Email: ' + profile.getEmail());
+
+                    document.getElementById("navProfilePic").src = profile.getImageUrl();
+                    document.getElementById("userName").innerText = profile.getName();
+                }
+                console.log("NAV BAR TRUE");
+            } else {
+                //update navbar to show generic info
+                console.log("NAV BAR FALSE");
+            };
         };
 
     </script>
 
-    <script async defer src="https://apis.google.com/js/api.js" 
-        onload="this.onload=function(){};handleClientLoad()"
+    <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
         onreadystatechange="if (this.readyState === 'complete') this.onload()">
-    </script>
+        </script>
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 </body>
 
 </html>
