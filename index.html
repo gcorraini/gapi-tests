@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>GAPI tests</title>
 
@@ -20,15 +19,11 @@
         <div class="nav-wrapper container">
             <a href="#" class="brand-logo left" style="position: static;">GAPI tests</a>
             <ul id="nav-mobile" class="left hide-on-med-and-down">
-                <!-- <li><a href="#">Sass</a></li>
-                <li><a href="#">Components</a></li>
-                <li><a href="#">JavaScript</a></li> -->
             </ul>
             <ul class="right" style="height:inherit;">
                 <li id="loginButtonNavLi"><a id="authorize_button" class="waves-effect waves-light"><i class="material-icons right">login</i>Login</a></li>
                 <li id="logoutButtonNavLi"><a id="signout_button" class="waves-effect waves-light"><i class="material-icons right">power_settings_new</i>Logout</a></li>
                 <li id="userName"></li>
-                <!-- <li><a href="#!"><span>1</span><i class="material-icons right">email</i></a></li> -->
                 <li id="navProfilePicLi" style="height:inherit;"><a style="height:inherit;" href="#user"><img id="navProfilePicImg" style="height:100%; padding:8px" class="circle" src="https://picsum.photos/100"></a></li>
             </ul>
         </div>
@@ -37,12 +32,13 @@
     <div class="container">
         <div class="row">
             <div class="col s6">
-                <p>Google Calendar API Quickstart</p>
+                <p>Proof of concept of pagination display using Google Calendar API</p>
             </div>
             <div class="col s6">
                 <!--Add buttons to initiate auth sequence and sign out-->
                 <!--<button class="waves-effect waves-light btn-large" id="authorize_button" style="display: none;">Authorize</button>
                 <button class="waves-effect waves-light btn-large" id="signout_button" style="display: none;">Sign Out</button>-->
+                <p>CalendarList</p>
             </div>
         </div>
 
@@ -56,61 +52,54 @@
             </div>
         </div>
 
-
         <div class="row">
             <div class="col s6">
-                <button id="callList" onclick="calListMaxResults()" class="waves-effect waves-light btn-large">Call List</button>
+                <button id="callList" onclick="calListMaxResults()" class="waves-effect waves-light btn-large">Call
+                    List</button>
             </div>
             <div class="col s6">
-                <button id="nextPage" onclick="calListNextPage()" class="waves-effect waves-light btn-large">Next page</button>
+                <button id="nextPage" onclick="calListNextPage()" class="waves-effect waves-light btn-large">Next
+                    page</button>
             </div>
         </div>
 
         <pre id="content" style="white-space: pre-wrap;"></pre>
 
         <div class="row">
-            <table id="tableDisplay" class="highlight responsive-table">
-                <thead>
-                    <tr>
-                        <th>accessRole</th>
-                        <th>backgroundColor</th>
-                        <th>colorId</th>
-                        <th>conferenceProperties</th>
-                        <th>defaultReminders</th>
-                        <th>description</th>
-                        <th>etag</th>
-                        <th>foregroundColor</th>
-                        <th>id</th>
-                        <th>kind</th>
-                        <th>summary</th>
-                        <th>timeZone</th>
-                    </tr>
-                </thead>
-        
-                <tbody>
-                  <!-- <tr>
-                    <td>Alvin</td>
-                    <td>Eclair</td>
-                    <td>$0.87</td>
-                  </tr>
-                  <tr>
-                    <td>Alan</td>
-                    <td>Jellybean</td>
-                    <td>$3.76</td>
-                  </tr>
-                  <tr>
-                    <td>Jonathan</td>
-                    <td>Lollipop</td>
-                    <td>$7.00</td>
-                  </tr> -->
-                </tbody>
-              </table>
+            <div class="col s12">
+                <table id="tableDisplay" class="bordered highlight responsive-table">
+                    <thead>
+                        <tr>
+                            <th>accessRole</th>
+                            <th>backgroundColor</th>
+                            <th>colorId</th>
+                            <th>conferenceProperties</th>
+                            <th>defaultReminders</th>
+                            <th>description</th>
+                            <th>etag</th>
+                            <th>foregroundColor</th>
+                            <th>id</th>
+                            <th>kind</th>
+                            <th>summary</th>
+                            <th>timeZone</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <ul id="tableDisplayPagination" class="pagination">
+                    <li class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li>
+                    <li class="active"><a href="#!">1</a></li>
+                    <li class="waves-effect"><a href="#!">2</a></li>
+                    <li class="waves-effect"><a href="#!">3</a></li>
+                    <li class="waves-effect"><a href="#!">4</a></li>
+                    <li class="waves-effect"><a href="#!">5</a></li>
+                    <li class="waves-effect"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
+                </ul>
+            </div>
         </div>
     </div>
 
-
     <!-- SCRIPTS -->
-
     <script type="text/javascript" src="./local.js"></script>
 
     <script type="text/javascript">
@@ -131,6 +120,8 @@
         var _calendarList_list_nextPageToken = ""; //Global nextPageToken for calendarList:list. "Last nextPageToken retrieved". lazy == empty
         var _calendarList_list_tokenList = []; //Global tokenList for calendarList:list. "Stores list of retrieved tokens". lazy == empty Array
         var _calendarList_list_currentPageNum = 1; //Global currentPageNum for calendarList:list. "Current page number". lazy == 1
+        var _calendarList_list_pagesData = {}; //Global pagesData for calendarList:list. "Stores the data retrieved and numbered page". lazy == empty obj
+
         var debugBuffer = null;
 
         /**
@@ -269,8 +260,14 @@
                         //};
                     };
 
+                    // Keeping queried pages in memory
+                    _calendarList_list_pagesData = {}; // Cleaning memory as this method must be the call for first page
+                    _calendarList_list_currentPageNum = 1; // Setting current page num as 1 as this method must be the call for first page
+
+                    _calendarList_list_pagesData["1"] = response.result.items; // Assigning directly to "1" as this method must be the call for first page
+
                     initDisplayTable();
-                    populateDisplayTable(response.result.items);
+                    populateDisplayTable(response.result.items, true);
                     //appendPre(JSON.stringify(response.result.items));
                 });
 
@@ -322,40 +319,77 @@
                     //if it does, store it on global _calendarList_list_nextPageToken
                     _calendarList_list_nextPageToken = response.result.nextPageToken;
                 } else if (response.result.hasOwnProperty("nextSyncToken")) { //response contains nextSyncToken?
-                    //Than you have reached the last page, exit
+                    //Than you have reached the last page
+                    /* TODO: 
+                        1. Store response as _calendarList_list_pagesData[_calendarList_list_currentPageNum] = response.result.items;
+                        2. Clean table contents
+                        3. Populate current response.result.items on table
+                    4. Update pagination controls for last page (add new page button activated; de-activate last page button; hide more icon; hide next button)
+                    */
+
+                    _calendarList_list_pagesData[_calendarList_list_currentPageNum] = response.result.items;
+                    populateDisplayTable(response.result.items, true);
+
                     alert("last page");
                     return;
                 };
 
                 console.log("next page");
                 debugBuffer = response;
-                console.log(response.result.items[0]);
-                appendPre(JSON.stringify(response.result.items));
+
+                // If all above passed, it means that the new page was retrieved sucessfully
+                _calendarList_list_currentPageNum++;
+
+
+                /* TODO: 
+                    1. Store response as _calendarList_list_pagesData[_calendarList_list_currentPageNum] = response.result.items;
+                    2. Clean table contents
+                    3. Populate current response.result.items on table
+                4. Update pagination controls (add new page button activated and de-activate last page)
+                */
+
+                //Update memory with new page results
+                _calendarList_list_pagesData[_calendarList_list_currentPageNum] = response.result.items;
+                populateDisplayTable(response.result.items, true);
             });
         };
 
         function initDisplayTable() {
-            //TODO: render table and headers to display section
-            /*
-            for (x in response.result.items) {
-                txt += response.result.items[x] + " ";
-            };
-            */
+            //TODO: Initialize table pagination, 
+            
+            //<ul id="displayTablePagination" class="pagination">
+            //    <li class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li>
+            //    <li class="active"><a href="#!">1</a></li>
+            //    <li class="waves-effect"><a href="#!">2</a></li>
+            //    <li class="waves-effect"><a href="#!">3</a></li>
+            //    <li class="waves-effect"><a href="#!">4</a></li>
+            //    <li class="waves-effect"><a href="#!">5</a></li>
+            //    <li id="paginationMore" class="disabled"><a href="#!"><i class="material-icons">more_horiz</i></a></li>
+            //    <li class="waves-effect"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
+            //</ul>
+            var ulPagination = document.getElementById("tableDisplayPagination");
+            ulPagination.innerHTML = '<li class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li><li class="active"><a href="#!">1</a></li><li id="paginationMore" class="disabled"><a href="#!"><i class="material-icons">more_horiz</i></a></li><li class="waves-effect"><a href="#!" onclick="alert();"><i class="material-icons">chevron_right</i></a></li>'; 
             return;
         };
-        function populateDisplayTable(lsobj) {
+
+        function populateDisplayTable(lsobj, clear) {
             //TODO: populate table
             var table = document.getElementById('tableDisplay').getElementsByTagName('tbody')[0];
+            if (clear){ //if flag to clear is true
+                // clear tbody
+                table.innerHTML = "";
+            };
+
             var newRow = null;
 
-            lsobj.forEach(function(obj) {
-                console.log(obj);
+            lsobj.forEach(function (obj) {
+                //console.log(obj);
                 newRow = table.insertRow();
                 newRow.insertCell().append(obj.accessRole);
                 newRow.insertCell().append(obj.backgroundColor);
                 newRow.insertCell().append(obj.colorId);
-                newRow.insertCell().append(obj.conferenceProperties);
-                newRow.insertCell().append(obj.defaultReminders);
+                newRow.insertCell().append(JSON.stringify(obj.conferenceProperties));
+                newRow.insertCell().append(JSON.stringify(obj.defaultReminders));
                 newRow.insertCell().append(obj.description);
                 newRow.insertCell().append(obj.etag);
                 newRow.insertCell().append(obj.foregroundColor);
@@ -364,21 +398,6 @@
                 newRow.insertCell().append(obj.summary);
                 newRow.insertCell().append(obj.timeZone);
             });
-
-
-            //accessRole
-            //backgroundColor
-            //colorId
-            //conferenceProperties
-            //defaultReminders
-            //description
-            //etag
-            //foregroundColor
-            //id
-            //kind
-            //summary
-            //timeZone
-
             return;
         };
 
@@ -413,6 +432,32 @@
             };
         };
 
+        function updatePagination(ynlast){ //Adds a new page based on the current page num and adds 
+
+            /*TODO: Update pagination controls for last page
+            1. Add new page button activated;
+                1.1. Find ul  
+                1.2. Find position of "more"
+                1.3. insert before more new li
+            2. de-activate previous page button; 
+            **IF LAST PAGE:**
+            3. hide more icon; 
+            4. hide next button;
+            */
+            
+
+
+
+            var ulPagination = document.getElementById("tableDisplayPagination");
+            //var li = document.createElement('li');
+            //li.appendChild(document.createTextNode(name));
+            //ul.appendChild(li);
+
+            var el = document.createElement("span");
+            el.innerHTML = "test";
+            var div = document.getElementById("foo");
+            div.parentNode.insertBefore(el, div.nextSibling);
+        };
     </script>
 
     <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
