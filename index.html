@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Google Calendar API Quickstart</title>
+    <title>GAPI tests</title>
 
     <!-- Materialize CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
@@ -25,10 +25,11 @@
                 <li><a href="#">JavaScript</a></li> -->
             </ul>
             <ul class="right" style="height:inherit;">
-                <li id="userName">AAA</li>
+                <li id="loginButtonNavLi"><a id="authorize_button" class="waves-effect waves-light"><i class="material-icons right">login</i>Login</a></li>
+                <li id="logoutButtonNavLi"><a id="signout_button" class="waves-effect waves-light"><i class="material-icons right">power_settings_new</i>Logout</a></li>
+                <li id="userName"></li>
                 <!-- <li><a href="#!"><span>1</span><i class="material-icons right">email</i></a></li> -->
-                <li style="height:inherit;"><a style="height:inherit;" href="#user"><img id="navProfilePic"
-                            style="height:100%; padding:8px" class="circle" src="https://picsum.photos/100"></a></li>
+                <li id="navProfilePicLi" style="height:inherit;"><a style="height:inherit;" href="#user"><img id="navProfilePicImg" style="height:100%; padding:8px" class="circle" src="https://picsum.photos/100"></a></li>
             </ul>
         </div>
     </nav>
@@ -40,8 +41,8 @@
             </div>
             <div class="col s6">
                 <!--Add buttons to initiate auth sequence and sign out-->
-                <button class="waves-effect waves-light btn-large" id="authorize_button" style="display: none;">Authorize</button>
-                <button class="waves-effect waves-light btn-large" id="signout_button" style="display: none;">Sign Out</button>
+                <!--<button class="waves-effect waves-light btn-large" id="authorize_button" style="display: none;">Authorize</button>
+                <button class="waves-effect waves-light btn-large" id="signout_button" style="display: none;">Sign Out</button>-->
             </div>
         </div>
 
@@ -167,15 +168,11 @@
          *  appropriately. After a sign-in, the API is called.
          */
         function updateSigninStatus(isSignedIn) {
-            if (isSignedIn) {
-                authorizeButton.style.display = 'none';
-                signoutButton.style.display = 'block';
-                //If signed in, run API call
-                //listUpcomingEvents();
+            if (isSignedIn) {//If signed in
+                //Update Navbar with user info and show Logout
                 updateNavBar(true);
-            } else {
-                authorizeButton.style.display = 'block';
-                signoutButton.style.display = 'none';
+            } else {//If not signed in
+                //Update Navbar to hide user info and show Login
                 updateNavBar(false);
             }
         }
@@ -273,17 +270,8 @@
                     };
 
                     initDisplayTable();
-                    //TODO: loop through result and print on a table
-                    /*
-                    for (x in response.result.items) {
-                        txt += response.result.items[x] + " ";
-                    };
-                    */
-
-
-                    appendPre(JSON.stringify(response.result.items));
-
-
+                    populateDisplayTable(response.result.items);
+                    //appendPre(JSON.stringify(response.result.items));
                 });
 
                 return;
@@ -348,20 +336,48 @@
 
         function initDisplayTable() {
             //TODO: render table and headers to display section
+            /*
+            for (x in response.result.items) {
+                txt += response.result.items[x] + " ";
+            };
+            */
             return;
         };
-        function populateDisplayTable(obj) {
+        function populateDisplayTable(lsobj) {
             //TODO: populate table
             var table = document.getElementById('tableDisplay').getElementsByTagName('tbody')[0];
-            // Insert a row at the end of table
-            var newRow = table.insertRow();
+            var newRow = null;
 
-            // Insert a cell at the end of the row
-            var newCell = newRow.insertCell();
+            lsobj.forEach(function(obj) {
+                console.log(obj);
+                newRow = table.insertRow();
+                newRow.insertCell().append(obj.accessRole);
+                newRow.insertCell().append(obj.backgroundColor);
+                newRow.insertCell().append(obj.colorId);
+                newRow.insertCell().append(obj.conferenceProperties);
+                newRow.insertCell().append(obj.defaultReminders);
+                newRow.insertCell().append(obj.description);
+                newRow.insertCell().append(obj.etag);
+                newRow.insertCell().append(obj.foregroundColor);
+                newRow.insertCell().append(obj.id);
+                newRow.insertCell().append(obj.kind);
+                newRow.insertCell().append(obj.summary);
+                newRow.insertCell().append(obj.timeZone);
+            });
 
-            // Append a text node to the cell
-            var newText = document.createTextNode('new row');
-            newCell.appendChild(newText);
+
+            //accessRole
+            //backgroundColor
+            //colorId
+            //conferenceProperties
+            //defaultReminders
+            //description
+            //etag
+            //foregroundColor
+            //id
+            //kind
+            //summary
+            //timeZone
 
             return;
         };
@@ -378,13 +394,22 @@
                     console.log('Image URL: ' + profile.getImageUrl());
                     console.log('Email: ' + profile.getEmail());
 
-                    document.getElementById("navProfilePic").src = profile.getImageUrl();
+                    document.getElementById("navProfilePicImg").src = profile.getImageUrl();
                     document.getElementById("userName").innerText = profile.getName();
                 }
                 console.log("NAV BAR TRUE");
+
+                document.getElementById('navProfilePicLi').style.display = 'block';
+                document.getElementById('logoutButtonNavLi').style.display = 'block';
+                document.getElementById('loginButtonNavLi').style.display = 'none';
+                document.getElementById("userName").style.display = 'block';
             } else {
                 //update navbar to show generic info
                 console.log("NAV BAR FALSE");
+                document.getElementById('navProfilePicLi').style.display = 'none';
+                document.getElementById('logoutButtonNavLi').style.display = 'none';
+                document.getElementById('loginButtonNavLi').style.display = 'block';
+                document.getElementById("userName").style.display = 'none';
             };
         };
 
