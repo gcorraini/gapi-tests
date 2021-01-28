@@ -58,8 +58,7 @@
                     List</button>
             </div>
             <div class="col s6">
-                <button id="nextPage" onclick="calListNextPage()" class="waves-effect waves-light btn-large">Next
-                    page</button>
+                <!-- <button id="nextPage" onclick="calListNextPage()" class="waves-effect waves-light btn-large">Next page</button> -->
             </div>
         </div>
 
@@ -121,6 +120,7 @@
         var _calendarList_list_tokenList = []; //Global tokenList for calendarList:list. "Stores list of retrieved tokens". lazy == empty Array
         var _calendarList_list_currentPageNum = 1; //Global currentPageNum for calendarList:list. "Current page number". lazy == 1
         var _calendarList_list_pagesData = {}; //Global pagesData for calendarList:list. "Stores the data retrieved and numbered page". lazy == empty obj
+        var _calendarList_list_lastPageNum = -1;
 
         var debugBuffer = null;
 
@@ -249,24 +249,26 @@
                         return; //GET OUTTA HERE, ITS GONNA BLOW.
                     };
 
+                    var ynSinglePage = false;
                     if (response.result.hasOwnProperty("nextPageToken")) { //response contains nextPageToken?
                         //if it does, store it on global _calendarList_list_nextPageToken
                         _calendarList_list_nextPageToken = response.result.nextPageToken;
-
-                        //TODO: That was the plan however nextPageToken returns a different token each time, tokenList is storing wrong values
-                        //if (!_calendarList_list_tokenList.includes(response.result.nextPageToken)) { //If Global tokenList doesnt contain current nextPageToken
-                        //push to it, highest index should contain latest page token "discovery"
-                        //_calendarList_list_tokenList.push(response.result.nextPageToken);
-                        //};
+                        ynSinglePage = false;
+                    };
+                    if (response.result.hasOwnProperty("nextSyncToken")) { //response contains nextSyncToken?
+                        //It means there is only one page
+                        _calendarList_list_nextPageToken = "";
+                        ynSinglePage = true;
+                        _calendarList_list_lastPageNum = 1;
                     };
 
                     // Keeping queried pages in memory
                     _calendarList_list_pagesData = {}; // Cleaning memory as this method must be the call for first page
                     _calendarList_list_currentPageNum = 1; // Setting current page num as 1 as this method must be the call for first page
 
-                    _calendarList_list_pagesData["1"] = response.result.items; // Assigning directly to "1" as this method must be the call for first page
+                    _calendarList_list_pagesData[_calendarList_list_currentPageNum] = response.result.items; // Assigning directly to "1" as this method must be the call for first page
 
-                    initDisplayTable();
+                    initDisplayTable(ynSinglePage);
                     populateDisplayTable(response.result.items, true);
                     //appendPre(JSON.stringify(response.result.items));
                 });
@@ -296,7 +298,23 @@
 
         function calListNextPage() {
             if (_calendarList_list_nextPageToken.length == 0) { //if _calendarList_list_nextPageToken is empty, 
-                //Than return nothing
+                // As it's not possible to call this method on the first call, 
+                // means that the final page was already reached and should not call API to fetch results.
+
+                //TODO: Add functionality to go to next page and populate from memory
+                /*TODO: 
+                1. 
+                2. 
+                */
+                _calendarList_list_currentPageNum++;
+
+                populateDisplayTable(_calendarList_list_pagesData[_calendarList_list_currentPageNum], true);
+                if(_calendarList_list_lastPageNum == _calendarList_list_currentPageNum){
+                    updatePagination(true);
+                }else{
+                    updatePagination(false);
+                };
+
                 return;
             };
 
@@ -326,9 +344,12 @@
                         3. Populate current response.result.items on table
                     4. Update pagination controls for last page (add new page button activated; de-activate last page button; hide more icon; hide next button)
                     */
-
+                    _calendarList_list_currentPageNum++;
+                    _calendarList_list_lastPageNum = _calendarList_list_currentPageNum;
+                    _calendarList_list_nextPageToken = "";
                     _calendarList_list_pagesData[_calendarList_list_currentPageNum] = response.result.items;
                     populateDisplayTable(response.result.items, true);
+                    updatePagination(true);
 
                     alert("last page");
                     return;
@@ -339,22 +360,23 @@
 
                 // If all above passed, it means that the new page was retrieved sucessfully
                 _calendarList_list_currentPageNum++;
-
-
+                
+                
                 /* TODO: 
-                    1. Store response as _calendarList_list_pagesData[_calendarList_list_currentPageNum] = response.result.items;
-                    2. Clean table contents
-                    3. Populate current response.result.items on table
+                1. Store response as _calendarList_list_pagesData[_calendarList_list_currentPageNum] = response.result.items;
+                2. Clean table contents
+                3. Populate current response.result.items on table
                 4. Update pagination controls (add new page button activated and de-activate last page)
                 */
-
+                
                 //Update memory with new page results
                 _calendarList_list_pagesData[_calendarList_list_currentPageNum] = response.result.items;
                 populateDisplayTable(response.result.items, true);
+                updatePagination(false);
             });
         };
 
-        function initDisplayTable() {
+        function initDisplayTable(ynSinglePage) {
             //TODO: Initialize table pagination, 
             
             //<ul id="displayTablePagination" class="pagination">
@@ -368,7 +390,13 @@
             //    <li class="waves-effect"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
             //</ul>
             var ulPagination = document.getElementById("tableDisplayPagination");
-            ulPagination.innerHTML = '<li class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li><li class="active"><a href="#!">1</a></li><li id="paginationMore" class="disabled"><a href="#!"><i class="material-icons">more_horiz</i></a></li><li class="waves-effect"><a href="#!" onclick="alert();"><i class="material-icons">chevron_right</i></a></li>'; 
+            
+            if(ynSinglePage){
+                ulPagination.innerHTML = '<li class="active"><a href="#!">1</a></li>'; 
+            }else{
+                ulPagination.innerHTML = '<li id="paginationPrev" class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li><li class="active"><a href="#!">1</a></li><li id="paginationMore" class="disabled"><a href="#!"><i class="material-icons">more_horiz</i></a></li><li id="paginationNext" class="waves-effect"><a href="#!" onclick="calListNextPage();"><i class="material-icons">chevron_right</i></a></li>'; 
+            };
+
             return;
         };
 
@@ -438,25 +466,62 @@
             1. Add new page button activated;
                 1.1. Find ul  
                 1.2. Find position of "more"
-                1.3. insert before more new li
+                1.3. Insert before more new li
             2. de-activate previous page button; 
             **IF LAST PAGE:**
             3. hide more icon; 
             4. hide next button;
             */
-            
-
-
-
+            var currentPageNum = _calendarList_list_currentPageNum;
             var ulPagination = document.getElementById("tableDisplayPagination");
-            //var li = document.createElement('li');
+
+            if (!(ulPagination.getElementsByClassName("active").length == 1)){ //If list contains more than one result of active page btn
+                //return nothing, exit
+                return;
+            };
+            var activeLi = ulPagination.getElementsByClassName("active")[0];           
+            activeLi.classList.replace("active", "waves-effect");
+
+            var moreBtn = document.getElementById("paginationMore");
+
+
+            //create and add new page button
+            var li = document.createElement('li');
+            var a = document.createElement('a');
+            
+            li.classList.add('active'); 
+            a.href="#!";
+            a.onclick = function () {
+                populateDisplayTable(_calendarList_list_pagesData[currentPageNum], true);
+                alert("ONCLICK");
+            };
+            
+            a.innerText = _calendarList_list_currentPageNum;
+
+            li.appendChild(a);
+
+            //ul.appendChild(li);
+
+            moreBtn.parentNode.insertBefore(li, moreBtn);
+
+            if (ynlast){ //TODO: LOGIC WHEN IM CLICKING DIRECTLY ON THE PAGE NUMBER
+                moreBtn.style.display = 'none';
+                //document.getElementById("paginationNext").classList.replace("waves-effect", "disabled");
+                document.getElementById("paginationNext").style.display = 'none';
+            }else{
+                moreBtn.style.display = 'block';
+                document.getElementById("paginationNext").classList.replace("disabled", "waves-effect");
+            };
+
+            console.log(li);
+
             //li.appendChild(document.createTextNode(name));
             //ul.appendChild(li);
 
-            var el = document.createElement("span");
-            el.innerHTML = "test";
-            var div = document.getElementById("foo");
-            div.parentNode.insertBefore(el, div.nextSibling);
+            //var el = document.createElement("span");
+            //el.innerHTML = "test";
+            //var div = document.getElementById("foo");
+            //div.parentNode.insertBefore(el, div.nextSibling);
         };
     </script>
 
